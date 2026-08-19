@@ -71,7 +71,33 @@ module.exports = async (req, res) => {
         }
         if (!r.ok) throw new Error(`GitHub API error: ${r.status}`);
         const json = await r.json();
-        const content = Buffer.from(json.content, 'base64').toString('utf-8');
+
+        let content;
+        if (json.content) {
+          // File < 1MB: Contents API langsung kasih isi filenya (base64)
+          content = Buffer.from(json.content, 'base64').toString('utf-8');
+        } else if (json.download_url) {
+          // File > 1MB: Contents API tidak kasih isi, harus fetch lewat download_url
+          const dl = await fetch(json.download_url);
+          if (!dl.ok) throw new Error(`Gagal ambil file besar dari download_url: ${dl.status}`);
+          content = await dl.text();
+        } else if (json.sha) {
+          // Fallback terakhir: Git Blobs API (mendukung file sampai 100MB)
+          const blobUrl = `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/git/blobs/${json.sha}`;
+          const blobRes = await fetch(blobUrl, {
+            headers: {
+              Authorization: `Bearer ${cfg.token}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+          });
+          if (!blobRes.ok) throw new Error(`Gagal ambil blob: ${blobRes.status}`);
+          const blob = await blobRes.json();
+          content = Buffer.from(blob.content, 'base64').toString('utf-8');
+        } else {
+          throw new Error('Tidak bisa membaca isi file (format respons GitHub tidak dikenali).');
+        }
+
         res.status(200).json(JSON.parse(content));
         return;
       }

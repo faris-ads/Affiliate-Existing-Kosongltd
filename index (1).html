@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kosong.Ltd — Affiliate Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F7F6F3;
+    --surface:#FFFFFF;
+    --border:#E4E2DC;
+    --ink:#1C1B19;
+    --ink-soft:#6E6B63;
+    --ink-faint:#A6A29A;
+    --navy:#26314D;
+    --navy-soft:#3D4A6B;
+    --amber:#C98A2B;
+    --amber-soft:#F3E3C4;
+    --rust:#B24A34;
+    --rust-soft:#F5DCD4;
+    --pine:#33604F;
+    --pine-soft:#DCEAE3;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(28,27,25,0.04), 0 8px 24px -12px rgba(28,27,25,0.10);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+
+  header.topbar{
+    position:sticky; top:0; z-index:20;
+    background:var(--navy);
+    color:#fff;
+    padding:18px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  header.topbar .brand{ display:flex; align-items:baseline; gap:10px; }
+  header.topbar .brand .mark{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; letter-spacing:-0.01em; }
+  header.topbar .brand .sub{ font-size:12.5px; color:#B9C0D4; font-weight:500; }
+  header.topbar .actions{ display:flex; gap:10px; align-items:center; }
+
+  .btn{
+    appearance:none; border:1px solid transparent; border-radius:8px;
+    padding:9px 15px; font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px;
+    cursor:pointer; transition:transform .12s ease, background .15s ease, border-color .15s ease;
+    display:inline-flex; align-items:center; gap:7px;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-amber{ background:var(--amber); color:#2A1C05; }
+  .btn-amber:hover{ background:#DA9A34; }
+  .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,0.28); }
+  .btn-ghost:hover{ border-color:rgba(255,255,255,0.55); }
+  .btn-rust{ background:transparent; color:var(--rust); border-color:var(--rust-soft); }
+  .btn-rust:hover{ background:var(--rust-soft); }
+  .btn-line{ background:transparent; color:var(--navy); border-color:var(--border); }
+  .btn-line:hover{ border-color:var(--navy-soft); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  main{ max-width:1180px; margin:0 auto; padding:28px 28px 80px; }
+
+  .month-rail{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:22px; }
+  .month-pill{
+    flex:0 0 auto; padding:8px 14px; border-radius:999px; border:1px solid var(--border);
+    background:var(--surface); font-size:13px; font-weight:600; color:var(--ink-soft);
+    cursor:pointer; white-space:nowrap; transition:all .15s ease;
+  }
+  .month-pill.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .month-pill:hover:not(.active){ border-color:var(--navy-soft); color:var(--navy); }
+  .month-pill.add{ color:var(--amber); border-color:var(--amber-soft); background:var(--amber-soft); }
+
+  .empty-state{
+    background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius);
+    padding:60px 28px; text-align:center; color:var(--ink-soft);
+  }
+  .empty-state .display{ font-size:22px; color:var(--ink); margin-bottom:8px; }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:24px; }
+  @media (max-width:920px){ .kpi-grid{ grid-template-columns:repeat(2,1fr); } }
+  .kpi-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 16px 14px; box-shadow:var(--shadow); }
+  .kpi-card .label{ font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:600; margin-bottom:8px;}
+  .kpi-card .value{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--ink); }
+  .kpi-card .value.pine{ color:var(--pine); }
+  .kpi-card .value.rust{ color:var(--rust); }
+  .kpi-card .sub{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:22px; overflow:hidden; }
+  .panel-head{ padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .panel-head h2{ font-family:'Space Grotesk',sans-serif; font-size:15.5px; margin:0; font-weight:600;}
+  .panel-head .desc{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .panel-body{ padding:18px 20px; }
+
+  .search-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type="text"], input[type="month"], select{
+    font-family:'Inter',sans-serif; font-size:13.5px; padding:8px 12px;
+    border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink);
+  }
+  input[type="text"]:focus, select:focus{ outline:2px solid var(--navy-soft); outline-offset:1px; }
+
+  label.toggle{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-soft); cursor:pointer; user-select:none; }
+  label.toggle input{ accent-color:var(--amber); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{
+    text-align:left; padding:9px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--ink-faint); border-bottom:1px solid var(--border); cursor:pointer; white-space:nowrap; font-weight:600;
+    position:sticky; top:0; background:var(--surface);
+  }
+  thead th:hover{ color:var(--navy); }
+  thead th.active{ color:var(--navy); }
+  tbody td{ padding:9px 12px; border-bottom:1px solid #F0EFEA; white-space:nowrap; }
+  tbody tr:hover{ background:#FBFAF7; }
+  td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+  .table-scroll{ overflow-x:auto; max-height:520px; overflow-y:auto; }
+  .name-cell{ display:flex; align-items:center; gap:8px; }
+  .rank{ font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:11.5px; width:20px; display:inline-block;}
+  .badge{ font-size:10px; font-weight:700; padding:1px 6px; border-radius:5px; letter-spacing:.02em; white-space:nowrap; }
+  .badge-top{ background:var(--amber-soft); color:#7A5310; }
+  .badge-zero{ background:var(--rust-soft); color:var(--rust); }
+  .badge-baru{ background:var(--pine-soft); color:var(--pine); }
+  .badge-berhenti{ background:#EDEBE5; color:var(--ink-faint); }
+  .split-bar{ display:flex; height:5px; width:64px; border-radius:3px; overflow:hidden; background:#EFEDE7; }
+  .split-bar span{ display:block; height:100%; }
+
+  .drop-zone{
+    border:1.5px dashed var(--border); border-radius:var(--radius); padding:32px 20px;
+    text-align:center; color:var(--ink-soft); cursor:pointer; transition:border-color .15s, background .15s;
+    background:#FCFBF9;
+  }
+  .drop-zone.drag{ border-color:var(--amber); background:var(--amber-soft); color:#7A5310; }
+  .drop-zone .display{ font-size:16px; color:var(--ink); margin-bottom:4px;}
+  .drop-zone small{ display:block; margin-top:8px; color:var(--ink-faint); }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(28,27,25,0.45); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-overlay.show{ display:flex; }
+  .modal{ background:#fff; border-radius:14px; padding:24px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+  .modal h3{ font-family:'Space Grotesk',sans-serif; margin:0 0 6px; font-size:17px; }
+  .modal p{ font-size:13.5px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5; }
+  .modal-row{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .modal-row label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+
+  .toast-wrap{ position:fixed; bottom:20px; right:20px; z-index:60; display:flex; flex-direction:column; gap:8px; }
+  .toast{ background:var(--ink); color:#fff; padding:11px 16px; border-radius:8px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.2); max-width:320px; animation:slideIn .2s ease; }
+  .toast.err{ background:var(--rust); }
+  .toast.ok{ background:var(--pine); }
+  @keyframes slideIn{ from{ transform:translateY(8px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+
+  .footer-note{ text-align:center; color:var(--ink-faint); font-size:12px; margin-top:36px; }
+  .spinner{ width:15px; height:15px; border-radius:50%; border:2px solid rgba(0,0,0,0.15); border-top-color:var(--navy); animation:spin .7s linear infinite; display:inline-block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .hidden{ display:none !important; }
+
+  /* Comparison section */
+  .compare-picker{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .compare-picker .vs{ font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--ink-faint); font-size:13px; }
+  .compare-kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  @media (max-width:920px){ .compare-kpi-grid{ grid-template-columns:repeat(2,1fr); } }
+  .compare-kpi{ border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
+  .compare-kpi .label{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-weight:600; margin-bottom:8px; }
+  .compare-kpi .row{ display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; color:var(--ink-soft); margin-bottom:2px; }
+  .compare-kpi .row .v{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--ink); }
+  .compare-kpi .delta{ margin-top:8px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; }
+  .compare-kpi .delta.up{ color:var(--pine); }
+  .compare-kpi .delta.down{ color:var(--rust); }
+  .compare-kpi .delta.flat{ color:var(--ink-faint); }
+
+  .delta-cell{ display:flex; align-items:center; justify-content:flex-end; gap:5px; }
+  .delta-cell .arrow{ font-size:11px; }
+  .delta-up{ color:var(--pine); }
+  .delta-down{ color:var(--rust); }
+  .delta-flat{ color:var(--ink-faint); }
+
+  .trend-svg-wrap{ width:100%; overflow-x:auto; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">KOSONG.LTD</span>
+    <span class="sub">Affiliate Performance Dashboard</span>
+  </div>
+  <div class="actions">
+    <button class="btn btn-ghost" id="btnDelete">Hapus bulan ini</button>
+    <button class="btn btn-amber" id="btnUpload">+ Upload data bulanan</button>
+  </div>
+</header>
+
+<main>
+  <div class="month-rail" id="monthRail"></div>
+  <div id="content"></div>
+  <div class="footer-note">Data tersimpan sebagai file JSON di repo GitHub — tanpa database pihak ketiga.</div>
+</main>
+
+<!-- Upload modal -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <h3 class="display">Upload data bulanan</h3>
+    <p>Pilih file XLSX hasil ekspor performa creator (format Kalodata / TikTok Shop Seller Center).</p>
+    <div class="modal-row">
+      <label for="monthInput">Periode</label>
+      <input type="month" id="monthInput" />
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <div class="display" id="dropLabel">Klik atau drag file .xlsx ke sini</div>
+      <small id="dropSub">Header di baris 1, data mulai baris 3</small>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="btnCancelUpload">Batal</button>
+      <button class="btn btn-amber" id="btnConfirmUpload" disabled>Simpan ke GitHub</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3 class="display">Hapus data bulan ini?</h3>
+    <p id="deleteMsg">Data akan dihapus permanen dari repo GitHub.</p>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="btnCancelDelete">Batal</button>
+      <button class="btn btn-rust" id="btnConfirmDelete">Ya, hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ---------------- Column mapping ---------------- */
+const COLUMN_MAP = {
+  'creator name': 'name',
+  'gmv dari kreator': 'gmvTotal',
+  'gmv dari live kreator': 'gmvLive',
+  'gmv dari video afiliasi': 'gmvVideo',
+  'pengembalian dana': 'refund',
+  'pesanan teratribusi': 'orders',
+  'produk yang terjual dari kreator': 'productsSold',
+  'produk yang dikembalikan dananya': 'productsRefunded',
+  'aov': 'aov',
+  'gmv dari kartu produk afiliasi': 'gmvShowcase',
+  'ctor': 'ctor',
+  'siaran live': 'liveCount',
+  'video': 'videoCount',
+  'jumlah konten sampel': 'sampleContentCount',
+  'sampel terkirim': 'sampleSent',
+  'produk yang ditambahkan ke showcase': 'showcaseAdded',
+  'ctr': 'ctr',
+  'impresi produk': 'productImpressions',
+  'tayangan video': 'videoViews',
+  'pembeli': 'buyers',
+  'produk terjual': 'uniqueProductsSold',
+  'perkiraan komisi': 'commission',
+};
+
+function parseCell(raw){
+  if (typeof raw === 'number') return raw;
+  if (raw === null || raw === undefined) return 0;
+  let s = String(raw).trim();
+  if (s === '' || s === '-') return 0;
+  const isPercent = s.includes('%');
+  s = s.replace(/Rp/gi,'').replace(/%/g,'').trim();
+  s = s.replace(/\./g,'').replace(/,/g,'.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseWorkbook(workbook){
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'' });
+  if (raw.length < 3) throw new Error('File terlalu pendek — pastikan format sesuai (header di baris 1).');
+  const headerRow = raw[0].map(h => String(h).trim().toLowerCase());
+  const keys = headerRow.map(h => COLUMN_MAP[h] || null);
+  const dataRows = raw.slice(2);
+  const rows = [];
+  for (const r of dataRows){
+    const nameIdx = keys.indexOf('name');
+    const name = nameIdx >= 0 ? String(r[nameIdx] || '').trim() : '';
+    if (!name) continue;
+    const obj = { name };
+    keys.forEach((k, idx) => {
+      if (!k || k === 'name') return;
+      obj[k] = parseCell(r[idx]);
+    });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+/* ---------------- API helpers ---------------- */
+async function apiListMonths(){
+  const res = await fetch('/api/data');
+  if (!res.ok) throw new Error('Gagal ambil daftar bulan');
+  const json = await res.json();
+  return json.months || [];
+}
+async function apiGetMonth(month){
+  const res = await fetch(`/api/data?month=${month}`);
+  if (!res.ok){
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || ('Gagal ambil data bulan ' + month));
+  }
+  return res.json();
+}
+async function apiSaveMonth(month, label, rows){
+  const res = await fetch('/api/data', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ month, label, rows }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Gagal menyimpan');
+  return json;
+}
+async function apiDeleteMonth(month){
+  const res = await fetch(`/api/data?month=${month}`, { method:'DELETE' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Gagal menghapus');
+  return json;
+}
+
+/* ---------------- State ---------------- */
+let state = {
+  months: [],
+  activeMonth: null,
+  activeData: null,
+  sortKey: 'gmvTotal',
+  sortDir: 'desc',
+  search: '',
+  hideZero: false,
+  monthCache: {},       // month -> { rows: [...] }
+  compareA: null,
+  compareB: null,
+  compareSearch: '',
+  compareSortKey: 'absDelta',
+};
+
+const fmtIDR = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const fmtNum = (n) => Math.round(n).toLocaleString('id-ID');
+const fmtPct = (n) => n.toFixed(2) + '%';
+const fmtSignedIDR = (n) => (n >= 0 ? '+' : '−') + 'Rp' + Math.round(Math.abs(n)).toLocaleString('id-ID');
+const fmtSignedPct = (n) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+const monthLabel = (m) => {
+  const [y, mo] = m.split('-');
+  const names = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return `${names[parseInt(mo,10)-1]} ${y}`;
+};
+
+function toast(msg, type=''){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+async function getMonthDataCached(month){
+  if (state.monthCache[month]) return state.monthCache[month];
+  const data = await apiGetMonth(month);
+  state.monthCache[month] = data;
+  return data;
+}
+
+/* ---------------- Rendering: month rail ---------------- */
+function renderMonthRail(){
+  const rail = document.getElementById('monthRail');
+  rail.innerHTML = '';
+  state.months.forEach(m => {
+    const pill = document.createElement('div');
+    pill.className = 'month-pill' + (m === state.activeMonth ? ' active' : '');
+    pill.textContent = monthLabel(m);
+    pill.onclick = () => selectMonth(m);
+    rail.appendChild(pill);
+  });
+  const add = document.createElement('div');
+  add.className = 'month-pill add';
+  add.textContent = '+ Tambah bulan';
+  add.onclick = openUploadModal;
+  rail.appendChild(add);
+}
+
+/* ---------------- Summary / KPI ---------------- */
+function computeSummary(rows){
+  const active = rows.filter(r => r.gmvTotal > 0);
+  const totalGmv = rows.reduce((s,r) => s + r.gmvTotal, 0);
+  const totalOrders = rows.reduce((s,r) => s + r.orders, 0);
+  const totalBuyers = rows.reduce((s,r) => s + r.buyers, 0);
+  const totalCommission = rows.reduce((s,r) => s + r.commission, 0);
+  const sorted = [...rows].sort((a,b) => b.gmvTotal - a.gmvTotal);
+  const top10Gmv = sorted.slice(0,10).reduce((s,r) => s + r.gmvTotal, 0);
+  const zeroWithSample = rows.filter(r => r.gmvTotal === 0 && (r.sampleSent > 0 || r.videoCount > 0 || r.liveCount > 0));
+  return {
+    totalGmv, totalOrders, totalBuyers, totalCommission,
+    activeCreators: active.length,
+    totalCreators: rows.length,
+    komisiRatio: totalGmv > 0 ? (totalCommission/totalGmv*100) : 0,
+    top10Share: totalGmv > 0 ? (top10Gmv/totalGmv*100) : 0,
+    zeroWithSample: zeroWithSample.length,
+  };
+}
+
+function renderKpis(summary){
+  const grid = document.createElement('div');
+  grid.className = 'kpi-grid';
+  const cards = [
+    { label:'Total GMV', value: fmtIDR(summary.totalGmv), sub:`${summary.totalOrders.toLocaleString('id-ID')} pesanan` },
+    { label:'Total Komisi', value: fmtIDR(summary.totalCommission), sub:`${summary.komisiRatio.toFixed(1)}% dari GMV`, cls:'rust' },
+    { label:'Creator Aktif', value: `${summary.activeCreators} / ${summary.totalCreators}`, sub:'punya penjualan (GMV > 0)', cls:'pine' },
+    { label:'Konsentrasi Top 10', value: fmtPct(summary.top10Share), sub:'kontribusi ke total GMV' },
+    { label:'Sample Tanpa Closing', value: summary.zeroWithSample, sub:'sudah kirim/posting, GMV = 0', cls: summary.zeroWithSample>0 ? 'rust' : '' },
+  ];
+  cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'kpi-card';
+    card.innerHTML = `<div class="label">${c.label}</div><div class="value ${c.cls||''}">${c.value}</div><div class="sub">${c.sub}</div>`;
+    grid.appendChild(card);
+  });
+  return grid;
+}
+
+/* ---------------- Trend (custom SVG, no external lib) ---------------- */
+function renderTrendPanel(){
+  if (state.months.length < 2) return null;
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="panel-head">
+      <div><h2>Tren antar bulan</h2><div class="desc">Total GMV per periode yang sudah di-upload</div></div>
+    </div>
+    <div class="panel-body"><div class="trend-svg-wrap" id="trendSvgWrap"><span class="spinner"></span></div></div>
+  `;
+  drawTrendSvg();
+  return panel;
+}
+
+async function drawTrendSvg(){
+  const wrap = document.getElementById('trendSvgWrap');
+  if (!wrap) return;
+  const points = [];
+  for (const m of state.months){
+    try {
+      const data = await getMonthDataCached(m);
+      const total = data.rows.reduce((s,r) => s + (r.gmvTotal||0), 0);
+      points.push({ month:m, total });
+    } catch(e){ /* skip bulan yang gagal diambil */ }
+  }
+  if (!document.getElementById('trendSvgWrap')) return; // panel sudah tidak ada (user pindah tab)
+  points.sort((a,b) => a.month.localeCompare(b.month));
+
+  if (points.length < 2){
+    wrap.innerHTML = `<div style="color:var(--ink-soft);font-size:13px;padding:20px 0;">Data belum cukup untuk menampilkan tren.</div>`;
+    return;
+  }
+
+  const W = Math.max(560, points.length * 110);
+  const H = 220;
+  const padL = 70, padR = 20, padT = 20, padB = 34;
+  const maxVal = Math.max(...points.map(p => p.total), 1);
+  const minVal = 0;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const xFor = (i) => padL + (points.length === 1 ? plotW/2 : (i/(points.length-1)) * plotW);
+  const yFor = (v) => padT + plotH - ((v - minVal) / (maxVal - minVal || 1)) * plotH;
+
+  const linePoints = points.map((p,i) => `${xFor(i)},${yFor(p.total)}`).join(' ');
+  const areaPoints = `${xFor(0)},${padT+plotH} ${linePoints} ${xFor(points.length-1)},${padT+plotH}`;
+
+  const gridLines = [0,0.25,0.5,0.75,1].map(f => {
+    const y = padT + plotH - f*plotH;
+    const val = minVal + f*(maxVal-minVal);
+    return `
+      <line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#EFEDE7" stroke-width="1" />
+      <text x="${padL-10}" y="${y+4}" text-anchor="end" font-size="10.5" font-family="IBM Plex Mono, monospace" fill="#A6A29A">Rp${(val/1000000).toFixed(val>=1000000?0:1)}jt</text>
+    `;
+  }).join('');
+
+  const dots = points.map((p,i) => `
+    <circle cx="${xFor(i)}" cy="${yFor(p.total)}" r="4.5" fill="#C98A2B" stroke="#fff" stroke-width="2" />
+    <text x="${xFor(i)}" y="${H-10}" text-anchor="middle" font-size="11.5" font-family="Inter, sans-serif" font-weight="600" fill="#1C1B19">${monthLabel(p.month)}</text>
+  `).join('');
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;">
+      ${gridLines}
+      <polygon points="${areaPoints}" fill="rgba(38,49,77,0.08)" />
+      <polyline points="${linePoints}" fill="none" stroke="#26314D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+      ${dots}
+    </svg>
+  `;
+}
+
+/* ---------------- Comparison section ---------------- */
+function mergeCreatorsForCompare(rowsA, rowsB){
+  const map = new Map();
+  rowsA.forEach(r => map.set(r.name, { name:r.name, a:r, b:null }));
+  rowsB.forEach(r => {
+    if (map.has(r.name)) map.get(r.name).b = r;
+    else map.set(r.name, { name:r.name, a:null, b:r });
+  });
+  return Array.from(map.values()).map(x => {
+    const gmvA = x.a ? x.a.gmvTotal : 0;
+    const gmvB = x.b ? x.b.gmvTotal : 0;
+    const delta = gmvB - gmvA;
+    let growth;
+    if (gmvA > 0) growth = (delta/gmvA*100);
+    else growth = gmvB > 0 ? Infinity : 0;
+    let status;
+    if (!x.a && x.b) status = 'baru';
+    else if (x.a && !x.b) status = 'berhenti';
+    else if (delta > 0.0001) status = 'naik';
+    else if (delta < -0.0001) status = 'turun';
+    else status = 'stabil';
+    return { name:x.name, a:x.a, b:x.b, gmvA, gmvB, delta, growth, absDelta: Math.abs(delta), status,
+      ordersA: x.a?x.a.orders:0, ordersB: x.b?x.b.orders:0,
+      buyersA: x.a?x.a.buyers:0, buyersB: x.b?x.b.buyers:0 };
+  });
+}
+
+function renderComparePicker(){
+  const div = document.createElement('div');
+  div.className = 'compare-picker';
+  const optsA = state.months.map(m => `<option value="${m}" ${m===state.compareA?'selected':''}>${monthLabel(m)}</option>`).join('');
+  const optsB = state.months.map(m => `<option value="${m}" ${m===state.compareB?'selected':''}>${monthLabel(m)}</option>`).join('');
+  div.innerHTML = `
+    <select id="compareASelect">${optsA}</select>
+    <span class="vs">vs</span>
+    <select id="compareBSelect">${optsB}</select>
+  `;
+  return div;
+}
+
+async function renderComparisonSection(){
+  if (state.months.length < 2) return null;
+
+  if (!state.compareB || !state.months.includes(state.compareB)) state.compareB = state.months[state.months.length-1];
+  if (!state.compareA || !state.months.includes(state.compareA) || state.compareA === state.compareB){
+    const others = state.months.filter(m => m !== state.compareB);
+    state.compareA = others.length ? others[others.length-1] : state.months[0];
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="panel-head">
+      <div><h2>Perbandingan antar bulan</h2><div class="desc">Metrik utama & performa per creator, bulan vs bulan</div></div>
+      <div id="comparePickerHost"></div>
+    </div>
+    <div class="panel-body" id="compareBody"><span class="spinner"></span> Memuat perbandingan...</div>
+  `;
+  panel.querySelector('#comparePickerHost').appendChild(renderComparePicker());
+
+  panel.querySelector('#compareASelect').onchange = (e) => { state.compareA = e.target.value; renderContent(); };
+  panel.querySelector('#compareBSelect').onchange = (e) => { state.compareB = e.target.value; renderContent(); };
+
+  loadComparisonBody(panel);
+  return panel;
+}
+
+async function loadComparisonBody(panel){
+  const body = panel.querySelector('#compareBody');
+  try {
+    const [dataA, dataB] = await Promise.all([
+      getMonthDataCached(state.compareA),
+      getMonthDataCached(state.compareB),
+    ]);
+    if (!document.body.contains(panel)) return;
+    const rowsA = dataA.rows, rowsB = dataB.rows;
+    const sumA = computeSummary(rowsA), sumB = computeSummary(rowsB);
+
+    body.innerHTML = '';
+    body.appendChild(renderCompareKpis(sumA, sumB));
+
+    const tableWrap = document.createElement('div');
+    tableWrap.style.marginTop = '20px';
+    tableWrap.appendChild(renderCompareTable(rowsA, rowsB));
+    body.appendChild(tableWrap);
+  } catch(e){
+    body.innerHTML = `<div style="color:var(--rust);font-size:13px;">Gagal memuat perbandingan: ${e.message}</div>`;
+  }
+}
+
+function compareKpiCard(label, valA, valB, fmtFn, higherIsBetter=true){
+  const delta = valB - valA;
+  const growth = valA !== 0 ? (delta/valA*100) : (valB !== 0 ? 100 : 0);
+  let dir = 'flat';
+  if (Math.abs(delta) > 0.0001) dir = (delta > 0) === higherIsBetter ? 'up' : 'down';
+  const arrow = delta > 0 ? '↑' : (delta < 0 ? '↓' : '→');
+  const card = document.createElement('div');
+  card.className = 'compare-kpi';
+  card.innerHTML = `
+    <div class="label">${label}</div>
+    <div class="row"><span>${monthLabel(state.compareA)}</span><span class="v">${fmtFn(valA)}</span></div>
+    <div class="row"><span>${monthLabel(state.compareB)}</span><span class="v">${fmtFn(valB)}</span></div>
+    <div class="delta ${dir}">${arrow} ${fmtSignedPct(growth)}</div>
+  `;
+  return card;
+}
+
+function renderCompareKpis(sumA, sumB){
+  const grid = document.createElement('div');
+  grid.className = 'compare-kpi-grid';
+  grid.appendChild(compareKpiCard('Total GMV', sumA.totalGmv, sumB.totalGmv, fmtIDR, true));
+  grid.appendChild(compareKpiCard('Total Pesanan', sumA.totalOrders, sumB.totalOrders, fmtNum, true));
+  grid.appendChild(compareKpiCard('Total Pembeli', sumA.totalBuyers, sumB.totalBuyers, fmtNum, true));
+  grid.appendChild(compareKpiCard('Creator Aktif', sumA.activeCreators, sumB.activeCreators, fmtNum, true));
+  grid.appendChild(compareKpiCard('Total Komisi', sumA.totalCommission, sumB.totalCommission, fmtIDR, false));
+  return grid;
+}
+
+function renderCompareTable(rowsA, rowsB){
+  const wrap = document.createElement('div');
+  let merged = mergeCreatorsForCompare(rowsA, rowsB);
+
+  merged = merged.filter(r => r.name.toLowerCase().includes(state.compareSearch.toLowerCase()));
+
+  const key = state.compareSortKey;
+  merged.sort((a,b) => {
+    if (key === 'absDelta') return b.absDelta - a.absDelta;
+    if (key === 'name') return a.name.localeCompare(b.name);
+    return (b[key]||0) - (a[key]||0);
+  });
+
+  const statusBadge = (s) => {
+    if (s === 'baru') return '<span class="badge badge-baru">CREATOR BARU</span>';
+    if (s === 'berhenti') return '<span class="badge badge-berhenti">TIDAK AKTIF LAGI</span>';
+    return '';
+  };
+  const deltaCell = (delta, growth) => {
+    let cls = 'delta-flat', arrow = '→';
+    if (delta > 0.0001){ cls = 'delta-up'; arrow = '↑'; }
+    else if (delta < -0.0001){ cls = 'delta-down'; arrow = '↓'; }
+    const growthTxt = isFinite(growth) ? fmtSignedPct(growth) : 'baru';
+    return `<span class="delta-cell ${cls}"><span class="arrow">${arrow}</span>${fmtSignedIDR(delta)} <span style="color:var(--ink-faint);">(${growthTxt})</span></span>`;
+  };
+
+  const cols = [
+    { key:'name', label:'Creator' },
+    { key:'gmvA', label: monthLabel(state.compareA) },
+    { key:'gmvB', label: monthLabel(state.compareB) },
+    { key:'absDelta', label:'Selisih GMV' },
+  ];
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">Perbandingan per creator <span style="color:var(--ink-faint);font-weight:500;">(${merged.length} creator)</span></div>
+      <input type="text" id="compareSearchInput" placeholder="Cari nama creator..." value="${state.compareSearch}" />
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          ${cols.map(c => `<th class="${c.key!=='name'?'num':''} ${state.compareSortKey===c.key?'active':''}" data-key="${c.key}">${c.label}</th>`).join('')}
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="compareTblBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  const tbody = wrap.querySelector('#compareTblBody');
+  merged.slice(0, 500).forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.name}</td>
+      <td class="num">${fmtIDR(r.gmvA)}</td>
+      <td class="num">${fmtIDR(r.gmvB)}</td>
+      <td class="num">${deltaCell(r.delta, r.growth)}</td>
+      <td>${statusBadge(r.status)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (merged.length > 500){
+    const note = document.createElement('div');
+    note.style.cssText = 'text-align:center;padding:10px;color:var(--ink-faint);font-size:12px;';
+    note.textContent = `Menampilkan 500 dari ${merged.length} creator — persempit dengan pencarian untuk melihat sisanya.`;
+    wrap.appendChild(note);
+  }
+
+  wrap.querySelectorAll('thead th[data-key]').forEach(th => {
+    th.onclick = () => { state.compareSortKey = th.dataset.key; renderContent(); };
+  });
+  wrap.querySelector('#compareSearchInput').oninput = (e) => {
+    state.compareSearch = e.target.value;
+    renderContent();
+  };
+
+  return wrap;
+}
+
+/* ---------------- Table (single month) ---------------- */
+function renderTable(rows){
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+
+  let filtered = rows.filter(r => r.name.toLowerCase().includes(state.search.toLowerCase()));
+  if (state.hideZero) filtered = filtered.filter(r => r.gmvTotal > 0);
+  filtered.sort((a,b) => {
+    const dir = state.sortDir === 'asc' ? 1 : -1;
+    return (a[state.sortKey] - b[state.sortKey]) * dir;
+  });
+
+  const cols = [
+    { key:'name', label:'Creator', num:false },
+    { key:'gmvTotal', label:'GMV', num:true, fmt:fmtIDR },
+    { key:'orders', label:'Pesanan', num:true, fmt:fmtNum },
+    { key:'buyers', label:'Pembeli', num:true, fmt:fmtNum },
+    { key:'aov', label:'AOV', num:true, fmt:fmtIDR },
+    { key:'ctor', label:'CTOR', num:true, fmt:fmtPct },
+    { key:'ctr', label:'CTR', num:true, fmt:fmtPct },
+    { key:'liveCount', label:'LIVE', num:true, fmt:fmtNum },
+    { key:'videoCount', label:'Video', num:true, fmt:fmtNum },
+    { key:'commission', label:'Komisi', num:true, fmt:fmtIDR },
+  ];
+
+  panel.innerHTML = `
+    <div class="panel-head">
+      <div><h2>Performa per creator</h2><div class="desc">${filtered.length} dari ${rows.length} creator ditampilkan · klik header untuk urutkan</div></div>
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Cari nama creator..." value="${state.search}" />
+        <label class="toggle"><input type="checkbox" id="hideZeroToggle" ${state.hideZero?'checked':''}/> Sembunyikan GMV = 0</label>
+      </div>
+    </div>
+    <div class="panel-body table-scroll">
+      <table>
+        <thead><tr>
+          ${cols.map(c => `<th class="${c.num?'num':''} ${state.sortKey===c.key?'active':''}" data-key="${c.key}">${c.label}${state.sortKey===c.key ? (state.sortDir==='desc'?' ↓':' ↑') : ''}</th>`).join('')}
+        </tr></thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  const tbody = panel.querySelector('#tblBody');
+  filtered.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const liveShare = r.gmvTotal > 0 ? (r.gmvLive/r.gmvTotal*100) : 0;
+    const isTop = i < 3 && r.gmvTotal > 0;
+    const isZeroWithEffort = r.gmvTotal === 0 && (r.sampleSent>0 || r.videoCount>0 || r.liveCount>0);
+    tr.innerHTML = `
+      <td>
+        <div class="name-cell">
+          <span class="rank">${i+1}</span>
+          <span>${r.name}</span>
+          ${isTop ? '<span class="badge badge-top">TOP</span>' : ''}
+          ${isZeroWithEffort ? '<span class="badge badge-zero">0 SALES</span>' : ''}
+        </div>
+      </td>
+      <td class="num">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+          <span>${fmtIDR(r.gmvTotal)}</span>
+          <span class="split-bar" title="LIVE ${liveShare.toFixed(0)}% / Video ${(100-liveShare).toFixed(0)}%">
+            <span style="width:${liveShare}%;background:#26314D;"></span><span style="width:${100-liveShare}%;background:#C98A2B;"></span>
+          </span>
+        </div>
+      </td>
+      <td class="num">${fmtNum(r.orders)}</td>
+      <td class="num">${fmtNum(r.buyers)}</td>
+      <td class="num">${fmtIDR(r.aov)}</td>
+      <td class="num">${fmtPct(r.ctor)}</td>
+      <td class="num">${fmtPct(r.ctr)}</td>
+      <td class="num">${fmtNum(r.liveCount)}</td>
+      <td class="num">${fmtNum(r.videoCount)}</td>
+      <td class="num">${fmtIDR(r.commission)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  panel.querySelectorAll('thead th').forEach(th => {
+    th.onclick = () => {
+      const key = th.dataset.key;
+      if (state.sortKey === key) state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+      else { state.sortKey = key; state.sortDir = 'desc'; }
+      renderContent();
+    };
+  });
+  panel.querySelector('#searchInput').oninput = (e) => { state.search = e.target.value; renderContent(); };
+  panel.querySelector('#hideZeroToggle').onchange = (e) => { state.hideZero = e.target.checked; renderContent(); };
+
+  return panel;
+}
+
+/* ---------------- Main render ---------------- */
+async function renderContent(){
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  if (!state.activeMonth){
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="display">Belum ada data</div>
+        <p>Upload file XLSX performa creator bulan pertama untuk mulai analisis.</p>
+      </div>`;
+    document.getElementById('btnDelete').disabled = true;
+    return;
+  }
+  document.getElementById('btnDelete').disabled = false;
+
+  if (!state.activeData){
+    content.innerHTML = `<div class="empty-state"><span class="spinner"></span> Memuat data...</div>`;
+    return;
+  }
+
+  const rows = state.activeData.rows;
+  const summary = computeSummary(rows);
+  content.appendChild(renderKpis(summary));
+
+  const trendPanel = renderTrendPanel();
+  if (trendPanel) content.appendChild(trendPanel);
+
+  const comparePanel = await renderComparisonSection();
+  if (comparePanel) content.appendChild(comparePanel);
+
+  content.appendChild(renderTable(rows));
+}
+
+async function selectMonth(month){
+  state.activeMonth = month;
+  state.activeData = state.monthCache[month] || null;
+  renderMonthRail();
+  await renderContent();
+  try {
+    const data = await getMonthDataCached(month);
+    state.activeData = data;
+  } catch(e){
+    toast(e.message, 'err');
+  }
+  await renderContent();
+}
+
+async function loadMonths(){
+  try {
+    state.months = await apiListMonths();
+    renderMonthRail();
+    if (state.months.length){
+      await selectMonth(state.months[state.months.length-1]);
+    } else {
+      await renderContent();
+    }
+  } catch(e){
+    toast(e.message, 'err');
+    await renderContent();
+  }
+}
+
+/* ---------------- Upload modal ---------------- */
+let pendingRows = null;
+let pendingFileName = '';
+
+function openUploadModal(){
+  document.getElementById('uploadModal').classList.add('show');
+  document.getElementById('monthInput').value = state.activeMonth || new Date().toISOString().slice(0,7);
+  pendingRows = null;
+  document.getElementById('btnConfirmUpload').disabled = true;
+  document.getElementById('dropLabel').textContent = 'Klik atau drag file .xlsx ke sini';
+  document.getElementById('dropSub').textContent = 'Header di baris 1, data mulai baris 3';
+}
+function closeUploadModal(){
+  document.getElementById('uploadModal').classList.remove('show');
+}
+
+function handleFile(file){
+  pendingFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array' });
+      const rows = parseWorkbook(wb);
+      pendingRows = rows;
+      document.getElementById('dropLabel').textContent = `✓ ${file.name}`;
+      document.getElementById('dropSub').textContent = `${rows.length} creator terdeteksi`;
+      document.getElementById('btnConfirmUpload').disabled = false;
+    } catch(err){
+      toast('Gagal parsing file: ' + err.message, 'err');
+      pendingRows = null;
+      document.getElementById('btnConfirmUpload').disabled = true;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('btnUpload').onclick = openUploadModal;
+document.getElementById('btnCancelUpload').onclick = closeUploadModal;
+document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+const dz = document.getElementById('dropZone');
+dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag'); };
+dz.ondragleave = () => dz.classList.remove('drag');
+dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove('drag'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); };
+
+document.getElementById('btnConfirmUpload').onclick = async () => {
+  const month = document.getElementById('monthInput').value;
+  if (!month || !pendingRows){ toast('Pilih periode & file terlebih dahulu', 'err'); return; }
+  const btn = document.getElementById('btnConfirmUpload');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  try {
+    await apiSaveMonth(month, monthLabel(month), pendingRows);
+    delete state.monthCache[month];
+    toast(`Data ${monthLabel(month)} tersimpan (${pendingRows.length} creator)`, 'ok');
+    closeUploadModal();
+    await loadMonths();
+    await selectMonth(month);
+  } catch(e){
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simpan ke GitHub';
+  }
+};
+
+/* ---------------- Delete modal ---------------- */
+document.getElementById('btnDelete').onclick = () => {
+  if (!state.activeMonth) return;
+  document.getElementById('deleteMsg').textContent = `Data ${monthLabel(state.activeMonth)} akan dihapus permanen dari repo GitHub.`;
+  document.getElementById('deleteModal').classList.add('show');
+};
+document.getElementById('btnCancelDelete').onclick = () => document.getElementById('deleteModal').classList.remove('show');
+document.getElementById('btnConfirmDelete').onclick = async () => {
+  const btn = document.getElementById('btnConfirmDelete');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menghapus...';
+  try {
+    await apiDeleteMonth(state.activeMonth);
+    delete state.monthCache[state.activeMonth];
+    toast('Data berhasil dihapus', 'ok');
+    document.getElementById('deleteModal').classList.remove('show');
+    state.activeMonth = null;
+    state.activeData = null;
+    state.compareA = null;
+    state.compareB = null;
+    await loadMonths();
+  } catch(e){
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ya, hapus';
+  }
+};
+
+loadMonths();
+</script>
+</body>
+</html>

@@ -444,7 +444,9 @@ function renderTrendPanel(){
     </div>
     <div class="panel-body"><div class="trend-svg-wrap" id="trendSvgWrap"><span class="spinner"></span></div></div>
   `;
-  drawTrendSvg();
+  // CATATAN: drawTrendSvg() sengaja TIDAK dipanggil di sini, karena panel ini
+  // belum ditempel ke document saat fungsi ini jalan (masih di memori saja).
+  // drawTrendSvg() dipanggil setelah panel di-appendChild ke DOM (lihat renderContent()).
   return panel;
 }
 
@@ -839,7 +841,10 @@ async function renderContent(){
   content.appendChild(renderKpis(summary));
 
   const trendPanel = renderTrendPanel();
-  if (trendPanel) content.appendChild(trendPanel);
+  if (trendPanel) {
+    content.appendChild(trendPanel);
+    drawTrendSvg(); // dipanggil DI SINI, setelah panel sudah masuk ke DOM
+  }
 
   const comparePanel = await renderComparisonSection();
   if (comparePanel) content.appendChild(comparePanel);
